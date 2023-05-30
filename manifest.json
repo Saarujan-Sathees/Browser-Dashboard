@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "Rapid",
+    "version": "1.0.0",
+    "background": {
+        "service_worker": "background.js",
+        "matches": ["<all_urls>"]
+    },
+
+    "icons": {
+        "128": "Logo.png"
+    },
+
+    "action": {
+        "default_icon": {
+            "32": "Logo.png"
+        },
+        "default_title": "Rapid"
+    },
+
+    "web_accessible_resources": [{
+        "resources": ["Background.jpg"],
+        "matches": ["<all_urls>"]
+    }],
+
+    "chrome_url_overrides" : {
+        "newtab": "dashboard.html"
+    },
+
+    "oauth2": {
+        "client_id": "oAUTH_ID",
+        "scopes": ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.modify",
+                   "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/" ]
+    },
+
+    "permissions": [ "activeTab", "scripting", "identity", "identity.email", "tabs" ],
+    "host_permissions": ["file_path_of_dashboard.html"]
+}
