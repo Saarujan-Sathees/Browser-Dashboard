@@ -1,19 +1,22 @@
-
-
 let contextMenu, currentDragOffset, currentDrag, placeholder, bookmarksEditable = false, contextDisplayed = false, 
-	backgroundSettings = false, root = document.documentElement;
+	backgroundSettings = false, root = document.documentElement, cursor, cursorRippling = false;
 let contextMenuStyle = "backdrop-filter: blur(8px) brightness(115%);";
 
 document.addEventListener("DOMContentLoaded", loadBookmarks);
 
 function measureText(text, weight, family, size) {
-	
 	let  canvas = document.createElement('canvas');
 	let context = canvas.getContext("2d");
 	context.font = weight + " " + family + " " + size;
 	return context.measureText(text).width;
 }
 
+function convertDate(date) {
+    return new Date(Date.parse(date.trim()));
+}
+
+const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Nov", "Dec" ];
+const SPACESTRING = "                ";
 chrome.runtime.onMessage.addListener((request, sender, response) => {
 	if (request.isProfileData) {
 		let response = request.body;
@@ -44,22 +47,26 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 		profilePic.style = "height: 12vh; border-radius: 2vh; float: right; margin-right: 2.5vh; margin-top: -9vh";
 		document.getElementById("profile-info").appendChild(profilePic);
 	} else {
-		let res = request.res, date, subject, from;
+		let res = request.res, date, subject, from, dateFound = false, dateInfo;
 		
 		for (let i = 0; i < res.length; ++i) {
-			if (res[i].name == "Date") {
-				date = res[i].value.substring(5, res[i].value.indexOf(' ', 5));
-				if (date == (new Date()).getDate().toString()) { //Today
-					let hour = +res[i].value.substring(res[i].value.indexOf(':') - 2, res[i].value.indexOf(':'));
-					date = res[i].value.substring(res[i].value.indexOf(':'), res[i].value.lastIndexOf(':'));
+			if (res[i].name == "Received" && !dateFound) {
+                dateFound = true;
+                dateInfo = convertDate(res[i].value.substring(res[i].value.indexOf(',') + 1));
+                
+				if (dateInfo.getDate() == new Date().getDate()) { //Today
+					let hour = dateInfo.getHours();
+					date = ':' + `${dateInfo.getMinutes()}`.padStart(2, 0);
 					if (hour < 12) 
 						date = hour + date + " AM";
-					else if (hour == 24) 
-						date = (hour - 12) + date + " AM";
-					else if (hour >= 12) 
+					else if (hour % 24 == 0) 
+						date = 12 + date + " AM";
+                    else if (hour == 12)
+                        date = 12 + date + " PM";
+					else if (hour > 12) 
 						date = (hour - 12) + date + " PM";
 				} else { //More than a day old
-					date = res[i].value.substring(6 + date.length, 9 + date.length) + " " + (new Date()).getDate(); 
+					date = MONTHS[dateInfo.getMonth()] + ' ' + dateInfo.getDate(); 
 				}
 			} else if (res[i].name == "Subject") {
 				subject = res[i].value.replaceAll("\n", "");
@@ -98,16 +105,20 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 			emailElement.style.borderBottom = "none";
 		
 		document.getElementById("email-widget").appendChild(emailElement);
-		let subElement = document.createElement("pre"), originalLength = subject.length;
+		let fromEl = document.createElement("pre"), subEl = document.createElement("pre"), originalLength = subject.length;
+        fromEl.className = "email-text";
+        subEl.className = "email-text";
+        fromEl.style.width = "5vw";
 
 		while (measureText(subject, "500", "system-ui", "12px") >= 140) {
 			subject = subject.substring(0, subject.length - 1);
 		}
 
-		subElement.innerText = from + "\t\t" + subject + (originalLength != subject.length ? "..." : "");
-		subElement.style = "font-family: system-ui; font-weight: 500; font-size: 12px; margin: 0; " + 
-							"color: var(--dashboard-secondary);";
-		emailElement.appendChild(subElement);
+        fromEl.innerText = from;
+		subEl.innerText = subject + (originalLength != subject.length ? "..." : "");
+
+		emailElement.appendChild(fromEl);
+        emailElement.appendChild(subEl);
 	}
 });
 
@@ -141,7 +152,7 @@ function toggleTheme() {
 		root.style.setProperty('--context-menu-item', "rgb(33 37 41 / 15%);");
 		contextMenuStyle = "backdrop-filter: blur(8px) brightness(95%);";
 		btn.style.transform = "rotate(180deg)";
-	} else {																										//Light -> Dark
+	} else {																				 //Light -> Dark
 		root.style.setProperty('--dashboard', "rgb(33 37 41)");
 		root.style.setProperty('--dashboard-secondary', "rgb(226 230 234)");
 		root.style.setProperty('--profile', "rgb(39 43 47 / 95%)");
@@ -251,10 +262,54 @@ function loadSearchBar() {
 	});
 }
 
+function moveCursor(ev) {
+    cursor.style.display = "";
+    cursor.style.translate = `${ev.clientX - 12}px ${ev.clientY - 12}px`;
+}
+
+async function cursorClick(ev) {
+    if (cursorRippling) return;
+    cursorRippling = true;
+    cursor.style.animation = "ripple-cursor 700ms ease";
+    await new Promise(r => setTimeout(r, 700));
+    cursor.style.animation = "";
+    cursorRippling = false;
+}
+
+function onHover(ev) {
+    cursor.style.scale = "130%";
+    ev.target.addEventListener("mouseleave", exitHover);
+}
+
+function exitHover(ev) {
+    cursor.style.scale = "";
+    ev.target.removeEventListener("mouseleave", exitHover);
+}
+
+
+function loadHoverListeners() {
+    document.getElementById("search-bar").addEventListener("mouseover", onHover);
+    document.getElementById("einthusan-widget").addEventListener("mouseover", onHover);
+    let arr = document.getElementsByClassName("bookmark");
+    for (let i = 0; i < arr.length; ++i) {
+        arr.item(i).addEventListener("mouseover", onHover);
+    }
+
+    arr = document.getElementsByClassName("context-button");
+    for (let i = 0; i < arr.length; ++i) {
+        arr.item(i).addEventListener("mouseover", onHover);
+    }
+
+    arr = document.getElementsByClassName("email");
+    for (let i = 0; i < arr.length; ++i) {
+        arr.item(i).addEventListener("mouseover", onHover);
+    }
+}
+
 function fixBookmarks() {
 	window.removeEventListener("mousemove", horizontalDrag);
 	window.removeEventListener("mouseup", fixBookmarks);
-	placeholder.style = "background-color: var(--accent); animation: 200ms ease infinite unlocked";
+	placeholder.style = "";
 	if (placeholder.parentElement.contains(currentDrag))
 		placeholder.parentElement.removeChild(currentDrag);
 }
@@ -262,12 +317,10 @@ function fixBookmarks() {
 function onBookmarkDrag(e) {
 	currentDrag = e.target.cloneNode();
 	currentDrag.innerText = e.target.innerText;
-	currentDrag.style.pointer = "grabbing";
-	e.target.style = "background: var(--dashboard); color: transparent";
+    currentDrag.classList.add("bookmark-dragged");
+	e.target.style = "background: transparent; color: transparent; pointer-events: none";
 	e.target.parentElement.appendChild(currentDrag);
 	placeholder = e.target;
-	currentDrag.style.position = "absolute";
-	currentDrag.style.animation = "";
 	currentDragOffset = e.clientX - parseInt(e.target.offsetLeft);
 
 	window.addEventListener("mouseup", fixBookmarks);
@@ -287,6 +340,9 @@ function horizontalDrag(mouse) {
 }
 
 async function loadBookmarks() {
+    cursor = document.getElementById("cursor");
+    document.addEventListener("mousemove", moveCursor);
+    document.addEventListener("mousedown", cursorClick);
 	loadSearchBar();
 	loadEW();
 
@@ -309,17 +365,13 @@ async function loadBookmarks() {
 			if (bookmarksEditable) {
 				bookmarksEditable = false;
 				for (let i = 0; i < bookmarks.length; ++i) {
-					bookmarks.item(i).style.backgroundColor = "";
-					bookmarks.item(i).style.animation = "";
-					bookmarks.item(i).style.cursor = "";
+                    bookmarks.item(i).classList.remove("bookmark-draggable");
 					bookmarks.item(i).removeEventListener("mousedown", onBookmarkDrag);
 				}
 			} else {
 				bookmarksEditable = true;
 				for (let i = 0; i < bookmarks.length; ++i) {
-					bookmarks.item(i).style.backgroundColor = "var(--accent)";
-					bookmarks.item(i).style.animation = "200ms ease infinite unlocked";
-					bookmarks.item(i).style.cursor = "grab";
+                    bookmarks.item(i).classList.add("bookmark-draggable");
 					bookmarks.item(i).addEventListener("mousedown", onBookmarkDrag);
 				}
 			}
@@ -375,6 +427,8 @@ async function loadBookmarks() {
 			redirectBookmark(emailContainer.children.item(i).getAttribute("name")); 
 		});
 	}
+
+    loadHoverListeners();
 }
 
 async function loadEW() {
@@ -382,8 +436,10 @@ async function loadEW() {
 	request.onreadystatechange = async function() {
 		if (this.readyState == 4 && this.status == 200) {
 			let data = this.responseText, widget = document.getElementById("einthusan-widget"), movieID = 0;
+            data = data.substring(data.indexOf("UIFeaturedFilms"), data.indexOf("dot-nav"));
+
 			while (data.indexOf("<h2>") != -1) {
-				data = data.substring(data.indexOf(`<a href="`, data.indexOf("newrelease_tab")) + 9);
+				data = data.substring(data.indexOf(`href`, data.indexOf(`block1`)) + 6);
 				
 				let container = document.createElement("div");
 				container.id = "movie-" + (++movieID);
@@ -396,23 +452,26 @@ async function loadEW() {
 				widget.appendChild(container);
 				let img = document.createElement("img");
 				img.classList.add("movie-poster");
-				img.src = "https:" + data.substring(data.indexOf(`src="`) + 5, data.indexOf(`"></a>`));
+
+                let startIndex = data.indexOf(`src`) + 5;
+				img.src = "https:" + data.substring(startIndex, data.indexOf(`">`, startIndex));
 				container.appendChild(img);
 
 				let title = document.createElement("pre");
 				title.classList.add("movie-title");
-				title.textContent = data.substring(data.indexOf("<h2>") + 4, data.indexOf("</h2>"));
+				title.textContent = data.substring(data.indexOf("<h2") + 4, data.indexOf("</h2>"));
 				if (title.textContent.length > 14) {
 					let fullTitle = title.textContent;
 					title.textContent = fullTitle.charAt(0);
 					for (let i = 1; i < fullTitle.length; ++i) {
 						if (fullTitle.charAt(i - 1) == ' ')
-							title.textContent += " " + fullTitle.charAt(i);
+							title.textContent += "." + fullTitle.charAt(i);
 					}
 				}
-				container.appendChild(title);
 
+				container.appendChild(title);
 				let rating;
+                
 				for (let i = 0; i < 5; ++i) {
 					data = data.substring(data.indexOf("data-value") + 12);
 					rating = document.createElement("progress");
