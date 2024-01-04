@@ -5,6 +5,7 @@
     --widget: rgb(48 52 56);
     --on-hover: rgb(53 57 62);
     --accent: rgb(255 95 31);
+    --accent-secondary: rgb(255 95 31 / 40%);
     --text: white;
     --shadow: rgb(127 127 127 / 70%);
     --context-menu-item: rgb(238 242 246 / 15%);
@@ -19,6 +20,7 @@ html, body {
     background-size: 100vw 100vh;
     background-attachment: fixed;
     overflow: hidden;
+    cursor: none !important;
 }
 
 body::-webkit-scrollbar {
@@ -39,6 +41,16 @@ body::-webkit-scrollbar {
     0% { transform: rotate(-1deg); animation-timing-function: ease-in; }
     50% { transform: rotate(1deg); animation-timing-function: ease-out; }
 }
+
+@keyframes ripple-cursor {
+    from {
+        box-shadow: 0 0 0 0 rgb(127 127 127 / 100%);
+    }
+    
+    to {
+        box-shadow: 0 0 0 10px rgb(127 127 127 / 0%);
+    }
+  }
 
 
 #context-menu {
@@ -159,7 +171,6 @@ body::-webkit-scrollbar {
     overflow: hidden;
     grid-row-start: 1;
     grid-column-start: 1;
-    cursor: pointer;
     transition: all 1000ms cubic-bezier(0.4, 0.15, 0, 1);
 }
 
@@ -234,13 +245,20 @@ progress[value]::-webkit-progress-value {
     padding: 0 1.5vw 0 1.5vw;
     margin: 0;
     border-bottom: 1px solid var(--shadow);
-    cursor: pointer;
     align-items: center;
     font-family: system-ui;
     color: var(--accent);
     font-weight: 500;
     font-size: 10px;
     transition: background-color 100ms ease-in
+}
+
+.email-text {
+    font-family: system-ui; 
+    font-weight: 500; 
+    font-size: 12px; 
+    margin: 0; 
+    color: var(--dashboard-secondary);
 }
 
 #search-bar {
@@ -283,8 +301,40 @@ progress[value]::-webkit-progress-value {
     color: var(--text);
     align-items: center;
     user-select: none;
-    cursor: pointer;
+    animation: none;
     transition: background-color 200ms ease-in, color 200ms ease-in-out;
+}
+
+.bookmark-draggable {
+    background-color: var(--accent);
+    animation: 200ms ease infinite unlocked;
+}
+
+.bookmark-draggable:hover {
+    background-color: var(--widget);
+}
+
+.bookmark-dragged {
+    position: absolute;
+    animation: none;
+    z-index: 9;
+    background-color: var(--widget) !important;
+}
+
+#cursor {
+    position: absolute;
+    height: 24px;
+    width: 24px;
+    box-sizing: border-box;
+    z-index: 10;
+
+    border-radius: 24px;
+    background-color: var(--accent);
+    transform-origin: center;
+    scale: 100%;
+    pointer-events: none;
+    box-shadow: 0 0 0 rgb(127 127 127 / 0%);
+    transition: scale 80ms ease-in;
 }
 
 #search-bar:hover, .bookmark:hover, .context-button:hover, .email:hover, #einthusan-widget:hover {
