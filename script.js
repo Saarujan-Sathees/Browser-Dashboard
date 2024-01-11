@@ -2,7 +2,7 @@ let contextMenu, currentDragOffset, currentDrag, placeholder, bookmarksEditable 
 	backgroundSettings = false, root = document.documentElement, cursor, cursorRippling = false;
 let contextMenuStyle = "backdrop-filter: blur(8px) brightness(115%);";
 
-document.addEventListener("DOMContentLoaded", loadBookmarks);
+document.addEventListener("DOMContentLoaded", loadPage);
 
 function measureText(text, weight, family, size) {
 	let  canvas = document.createElement('canvas');
@@ -13,6 +13,15 @@ function measureText(text, weight, family, size) {
 
 function convertDate(date) {
     return new Date(Date.parse(date.trim()));
+}
+
+async function store(key, value) {
+    await chrome.storage.local.set({ [key]: value });
+}
+
+async function retrieve(key) {
+    let res = await chrome.storage.local.get([key]);
+    return res[key];
 }
 
 const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Nov", "Dec" ];
@@ -46,6 +55,15 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 		profilePic.src = response["picture"];
 		profilePic.style = "height: 12vh; border-radius: 2vh; float: right; margin-right: 2.5vh; margin-top: -9vh";
 		document.getElementById("profile-info").appendChild(profilePic);
+        profilePic.addEventListener("click", async () => {
+            let device = await navigator.bluetooth.requestDevice({ 
+                acceptAllDevices: true
+            });
+
+            const server = await device.gatt.connect();
+            console.log(device.gatt.device.name);
+        })
+    
 	} else {
 		let res = request.res, date, subject, from, dateFound = false, dateInfo;
 		
@@ -69,7 +87,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 					date = MONTHS[dateInfo.getMonth()] + ' ' + dateInfo.getDate(); 
 				}
 			} else if (res[i].name == "Subject") {
-				subject = res[i].value.replaceAll("\n", "");
+				subject = res[i].value.replaceAll("\n", "").replaceAll("[External Sender] ", "");
 			} else if (res[i].name == "From") {
 				from = res[i].value.substring(res[i].value.indexOf('"') == 0 ? 1 : 0);
 				from = from.substring(0, from.indexOf(" (") == -1 ? from.indexOf(" <") : from.indexOf(" ("));
@@ -85,6 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 				}
 				
 				from = from.substring(0, from.indexOf(' ') == -1 ? undefined : from.indexOf(' '));
+                if (from.length == 0) from = res[i].value;
 				let initialLength = from.length;
 				while (measureText(from, "500", "system-ui", "12px") >= 35) {
 					from = from.substring(0, from.length - 1);
@@ -123,7 +142,7 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 });
 
 
-async function redirectBookmark(link) {
+async function redirect(link) {
 	let infobar = document.getElementById("info-bar"), widgets = document.getElementById("widget-container"),
 		account = document.getElementById("account");
 
@@ -139,9 +158,9 @@ async function redirectBookmark(link) {
 	window.location = link;
 }
 
-function toggleTheme() {
+function toggleTheme(ev, specific = null) {
 	let btn = document.getElementById("theme-toggle");
-	if (getComputedStyle(root).getPropertyValue('--dashboard').trim() == "rgb(33 37 41)") {	 //Dark -> Light
+	if (specific == "light" || (specific == null && getComputedStyle(root).getPropertyValue('--dashboard').trim() == "rgb(33 37 41)")) { //Dark -> Light
 		root.style.setProperty('--dashboard', "rgb(238 242 246)");
 		root.style.setProperty('--dashboard-secondary', "rgb(48 52 56)");
 		root.style.setProperty('--profile', "rgb(232 236 240 / 95%)");
@@ -152,6 +171,7 @@ function toggleTheme() {
 		root.style.setProperty('--context-menu-item', "rgb(33 37 41 / 15%);");
 		contextMenuStyle = "backdrop-filter: blur(8px) brightness(95%);";
 		btn.style.transform = "rotate(180deg)";
+        store("color-scheme", "light");
 	} else {																				 //Light -> Dark
 		root.style.setProperty('--dashboard', "rgb(33 37 41)");
 		root.style.setProperty('--dashboard-secondary', "rgb(226 230 234)");
@@ -163,6 +183,7 @@ function toggleTheme() {
 		root.style.setProperty('--context-menu-item', "rgb(238 242 246 / 15%)");
 		contextMenuStyle = "backdrop-filter: blur(8px) brightness(115%);";
 		btn.style.transform = "";
+        store("color-scheme", "dark");
 	}
 }
 
@@ -181,18 +202,15 @@ function removeBackgroundSettings() {
 async function changeBackground() {
 	function onSliderMove(ev) {
 		root.style.setProperty("--" + ev.target.id, `rgb(${ev.target.id == "red-slider" ? ev.target.value : 0} 
-																				${ev.target.id == "green-slider" ? ev.target.value : 0}
-																				${ev.target.id == "blue-slider" ? ev.target.value : 0})`);
+														 ${ev.target.id == "green-slider" ? ev.target.value : 0}
+														 ${ev.target.id == "blue-slider" ? ev.target.value : 0})`);
 	
 		let red = document.getElementById("red-slider").value;
 		let green = document.getElementById("green-slider").value;
 		let blue = document.getElementById("blue-slider").value;
 
 		root.style.setProperty('--accent', `rgb(${red} ${green} ${blue})`);
-		if (document.body.style.backgroundImage != "") { 
-			document.body.style.backgroundImage = "";
-			document.body.style.backgroundColor = "var(--accent)";
-		}
+        store("accent-color", `rgb(${red} ${green} ${blue})`);
 	}
 
 	function onSliderUp(ev) {
@@ -232,6 +250,7 @@ async function changeBackground() {
 	for (let i = 0; i < 3; ++i) {
 		slider[i].style.top = "0";
 	}
+    
 	backgroundSettings = true;
 }
 
@@ -287,20 +306,8 @@ function exitHover(ev) {
 }
 
 
-function loadHoverListeners() {
-    document.getElementById("search-bar").addEventListener("mouseover", onHover);
-    document.getElementById("einthusan-widget").addEventListener("mouseover", onHover);
-    let arr = document.getElementsByClassName("bookmark");
-    for (let i = 0; i < arr.length; ++i) {
-        arr.item(i).addEventListener("mouseover", onHover);
-    }
-
+function loadContextMenu() {
     arr = document.getElementsByClassName("context-button");
-    for (let i = 0; i < arr.length; ++i) {
-        arr.item(i).addEventListener("mouseover", onHover);
-    }
-
-    arr = document.getElementsByClassName("email");
     for (let i = 0; i < arr.length; ++i) {
         arr.item(i).addEventListener("mouseover", onHover);
     }
@@ -339,26 +346,40 @@ function horizontalDrag(mouse) {
 	}
 }
 
-async function loadBookmarks() {
+async function loadPage() {
     cursor = document.getElementById("cursor");
     document.addEventListener("mousemove", moveCursor);
     document.addEventListener("mousedown", cursorClick);
-	loadSearchBar();
-	loadEW();
+    
+	contextMenu = document.getElementById("context-menu");
+    let bgImage = await retrieve("background-image"), accentColor = await retrieve("accent-color");
+        
+    toggleTheme(null, await retrieve("color-scheme"));
+    if (bgImage == "no_image") {
+        document.body.style.backgroundColor = "var(--widget)";
+    } else {
+        document.body.style.backgroundImage = `url(${bgImage})`;
+    }
+
+    root.style.setProperty("--accent", accentColor);
+    await fetchEinthusan();
+    fetchWeather();
+    loadClock();
+    loadBattery();
+    backgroundLoop();
+
+    loadApplets();
+    loadSearchBar();
+    await loadEmails();
+    await loadBookmarks();
+    loadContextMenu();
 
 	//Event Listeners
+    document.getElementById("search-bar").addEventListener("mouseover", onHover);
+    document.getElementById("einthusan-widget").addEventListener("mouseover", onHover);
 	document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 	document.getElementById("background-change").addEventListener("click", changeBackground);
-	let bookmarkContainer = document.getElementById("bookmark-container");
-	for (let i = 0; i < bookmarkContainer.childElementCount; ++i) {
-		bookmarkContainer.children.item(i).addEventListener("click", () => {
-			redirectBookmark(bookmarkContainer.children.item(i).getAttribute("name"));
-		});
-	}
-
-	document.body.style.backgroundImage = "url('Background.jpg')";
-	contextMenu = document.getElementById("context-menu");
-	document.body.addEventListener("contextmenu", async e => {
+    document.body.addEventListener("contextmenu", async e => {
 		e.preventDefault();
 		if (e.target.id == "bookmark-container") {
 			let bookmarks = document.getElementById("bookmark-container").children;
@@ -416,90 +437,213 @@ async function loadBookmarks() {
 			removeBackgroundSettings();
 		}
 	});
+}
 
+async function loadEmails() {
 	let emailContainer = document.getElementById("email-widget");
 	while (emailContainer.childElementCount < 5) {
 		await new Promise(r => setTimeout(r, 50));
 	}
 
 	for (let i = 0; i < emailContainer.childElementCount; ++i) {
+        emailContainer.children.item(i).addEventListener("mouseover", onHover);
 		emailContainer.children.item(i).addEventListener("click", () => { 
-			redirectBookmark(emailContainer.children.item(i).getAttribute("name")); 
+			redirect(emailContainer.children.item(i).getAttribute("name")); 
 		});
 	}
-
-    loadHoverListeners();
 }
 
-async function loadEW() {
-	let request = new XMLHttpRequest();
+async function loadBookmarks() {
+	let bookmarkContainer = document.getElementById("bookmark-container");
+	for (let i = 0; i < bookmarkContainer.childElementCount; ++i) {
+        bookmarkContainer.children.item(i).addEventListener("mouseover", onHover);
+		bookmarkContainer.children.item(i).addEventListener("click", () => {
+			redirect(bookmarkContainer.children.item(i).getAttribute("name"));
+		});
+	}
+}
+
+async function loadApplets() {
+    const prefix = "https://www.google.com/s2/favicons?sz=128&domain_url=";
+	let appletContainer = document.getElementById("applet-container");
+    for (let i = 0; i < appletContainer.childElementCount; ++i) {
+        appletContainer.children.item(i).addEventListener("mouseover", onHover);
+        appletContainer.children.item(i).addEventListener("click", () => {
+            redirect(appletContainer.children.item(i).getAttribute("name"));
+        });
+
+        if (appletContainer.children.item(i).src != null)
+            appletContainer.children.item(i).src = prefix + appletContainer.children.item(i).getAttribute("name");
+    }
+}
+
+async function loadClock() {
+    let time = document.createElement("pre"), amOrPm = document.createElement("pre");
+    time.style = "font-family: system-ui; font-size: 7vh; font-weight: 600; color: var(--text);";
+    time.id = "clock-widget-time";
+    amOrPm.style = "font-family: system-ui; font-size: 7vh; font-weight: 600; color: var(--accent);";
+    amOrPm.id = "clock-widget-indicator";
+
+    document.getElementById("clock-widget").appendChild(time);
+    document.getElementById("clock-widget").appendChild(amOrPm);
+    document.getElementById("clock-widget").addEventListener("mouseover", onHover);
+}
+
+async function loadBattery() {
+    let batteryWidget = document.getElementById("battery-widget"), batteryLevel = document.createElement("div"),
+        batteryText = document.createElement("pre");
+
+    batteryLevel.id = "battery-level";
+    batteryText.id = "battery-indicator";
+    batteryText.style = `position: fixed; height: 14vh; line-height: 14vh; font-size: 3vh; 
+                         font-weight: 600; font-family: system-ui; color: var(--text);`;
+    batteryWidget.appendChild(batteryLevel);
+    batteryWidget.appendChild(batteryText);
+}
+
+async function backgroundLoop() {
+    let movie = { widget: document.getElementById("einthusan-widget"), index: 1, curr: null, 
+                  count: document.getElementById("einthusan-widget").childElementCount };
+    let battery = { widget: document.getElementById("battery-level"), info: null,
+                    text: document.getElementById("battery-indicator") };
+    let clock = { time: document.getElementById("clock-widget-time"), date: null, hours: null,
+                  amOrPm: document.getElementById("clock-widget-indicator") };
+
+    while (1) {
+        //#region Clock Loop
+        clock.date = new Date(Date.now());
+        clock.hours = clock.date.getHours();
+        if (clock.hours >= 12) {
+            clock.hours = (clock.hours - 1) % 12 + 1; 
+            clock.amOrPm.textContent = "PM";
+        } else {
+            clock.amOrPm.textContent = "AM";
+        }
+
+        clock.time.textContent = clock.hours.toString() + ":" + clock.date.getMinutes().toString().padStart(2, '0') + " ";
+        //#endregion
+
+        //#region Battery Loop
+        battery.info = await navigator.getBattery();
+        battery.text.textContent = battery.info.level * 100 + "%";
+        battery.widget.style.setProperty("--percentage", `${battery.info.level * 100}%`);
+        //#endregion
+
+        //#region Movie Loop
+        await new Promise(r => setTimeout(r, 3500));
+        movie.curr = document.getElementById("movie-" + movie.index);
+        movie.curr.style.height = "0";
+        if (++movie.index > movie.count) 
+        movie.index = 1;
+        
+        document.getElementById("movie-" + movie.index).style.marginTop = "0";
+        await new Promise(r => setTimeout(r, 1000));
+        movie.widget.appendChild(movie.curr);
+        movie.curr.style.marginTop = "";
+        movie.curr.style.height = "";
+        //#endregion
+    }
+}
+
+async function fetchWeather() {
+    let request = new XMLHttpRequest();
 	request.onreadystatechange = async function() {
 		if (this.readyState == 4 && this.status == 200) {
-			let data = this.responseText, widget = document.getElementById("einthusan-widget"), movieID = 0;
-            data = data.substring(data.indexOf("UIFeaturedFilms"), data.indexOf("dot-nav"));
+			let data = this.responseText, widget = document.getElementById("weather-widget");
+            widget.addEventListener("click", () => {
+                redirect("https://www.google.com/search?q=weather"); 
+            });
+            
+            data = data.substring(data.indexOf("AP7Wnd", data.indexOf("AP7Wnd") + 1) + 8);
+            
+            let temp = document.createElement("pre");
+            temp.style = "margin: 0; font-family: system-ui; font-size: 5vh; font-weight: 600; color: var(--accent);";
+            temp.textContent = data.substring(0, data.indexOf("C")) + " °C";
 
-			while (data.indexOf("<h2>") != -1) {
-				data = data.substring(data.indexOf(`href`, data.indexOf(`block1`)) + 6);
-				
-				let container = document.createElement("div");
-				container.id = "movie-" + (++movieID);
-				container.setAttribute("name", "https://einthusan.tv" + data.substring(0, data.indexOf('"')));
-				container.onclick = () => { redirectBookmark(container.getAttribute("name")); };
-				container.classList.add("movie-container");
-				if (movieID == 1) 
-					container.style.marginTop = "0";
-		
-				widget.appendChild(container);
-				let img = document.createElement("img");
-				img.classList.add("movie-poster");
+            data = data.substring(data.indexOf(".m.") + 4);
+            let weather = document.createElement("pre"), weatherUnformatted = data.substring(0, data.indexOf("<"));
+            weather.style = "margin: 0; font-family: system-ui; font-size: 1.75vh; font-weight: 400; color: var(--text);";
+            weather.textContent = weatherUnformatted[0];
+            for (let i = 0; i < weatherUnformatted.length - 1; ++i) {
+                if (weather.textContent[i] == ' ') 
+                    weather.textContent += String.fromCharCode(weatherUnformatted.charCodeAt(i + 1) - 32);
+                else
+                    weather.textContent += weatherUnformatted[i + 1];
+            }
 
-                let startIndex = data.indexOf(`src`) + 5;
-				img.src = "https:" + data.substring(startIndex, data.indexOf(`">`, startIndex));
-				container.appendChild(img);
+            let icon = document.createElement("span");
+            icon.className = "material-icons";
+            icon.style = "width: 12vh; margin: 2vh 3vh; font-size: 12vh; color: var(--text);"
+            let wordArr = weather.textContent.toLowerCase().split(" ");
+            icon.textContent = wordArr[wordArr.length - 1];
 
-				let title = document.createElement("pre");
-				title.classList.add("movie-title");
-				title.textContent = data.substring(data.indexOf("<h2") + 4, data.indexOf("</h2>"));
-				if (title.textContent.length > 14) {
-					let fullTitle = title.textContent;
-					title.textContent = fullTitle.charAt(0);
-					for (let i = 1; i < fullTitle.length; ++i) {
-						if (fullTitle.charAt(i - 1) == ' ')
-							title.textContent += "." + fullTitle.charAt(i);
-					}
-				}
-
-				container.appendChild(title);
-				let rating;
-                
-				for (let i = 0; i < 5; ++i) {
-					data = data.substring(data.indexOf("data-value") + 12);
-					rating = document.createElement("progress");
-					rating.classList.add("movie-rating");
-					rating.setAttribute("value", data.substring(0, data.indexOf('"')));
-					rating.setAttribute("max", "5");
-					container.appendChild(rating);
-				}		   
-			}
-			
-			let currentMovie = 1, curr;
-			await new Promise(r => setTimeout(r, 500));
-			while (1) {
-				await new Promise(r => setTimeout(r, 3500));
-				curr = document.getElementById("movie-" + currentMovie);
-				curr.style.height = "0";
-				if (++currentMovie > movieID) 
-					currentMovie = 1;
-				
-				document.getElementById("movie-" + currentMovie).style.marginTop = "0";
-				await new Promise(r => setTimeout(r, 1000));
-				widget.appendChild(curr);
-				curr.style.marginTop = "";
-				curr.style.height = "";
-			}
+            widget.appendChild(temp);
+            widget.appendChild(weather);
+            widget.appendChild(icon);
+            widget.addEventListener("mouseover", onHover);
 		}
 	};
 
-	request.open("GET", `http://${!navigator.userAgent.indexOf("Edg") != -1 ? "192.168.86.33" : "192.168.2.36"}:2020/movie-fetch`, true);  
+	request.open("GET", `http://127.0.0.1:2020/weather-fetch`, true);  
 	request.send();
+}
+
+async function fetchEinthusan() {
+    return new Promise(resolve => {
+        let request = new XMLHttpRequest();
+        request.onreadystatechange = async function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = this.responseText, widget = document.getElementById("einthusan-widget"), movieID = 0;
+
+                while (data.indexOf("<h2>") != -1) {
+                    data = data.substring(data.indexOf(`href`, data.indexOf(`block1`)) + 6);
+                    
+                    let container = document.createElement("div");
+                    container.id = "movie-" + (++movieID);
+                    container.setAttribute("name", "https://einthusan.tv" + data.substring(0, data.indexOf('"')));
+                    container.onclick = () => { redirect(container.getAttribute("name")); };
+                    container.classList.add("movie-container");
+                    if (movieID == 1) 
+                        container.style.marginTop = "0";
+            
+                    widget.appendChild(container);
+                    let img = document.createElement("img");
+                    img.classList.add("movie-poster");
+
+                    let startIndex = data.indexOf(`src`) + 5;
+                    img.src = "https:" + data.substring(startIndex, data.indexOf(`">`, startIndex));
+                    container.appendChild(img);
+
+                    let title = document.createElement("pre");
+                    title.classList.add("movie-title");
+                    title.textContent = data.substring(data.indexOf("<h2") + 4, data.indexOf("</h2>"));
+                    if (title.textContent.length > 14) {
+                        let fullTitle = title.textContent;
+                        title.textContent = fullTitle.charAt(0);
+                        for (let i = 1; i < fullTitle.length; ++i) {
+                            if (fullTitle.charAt(i - 1) == ' ')
+                                title.textContent += "." + fullTitle.charAt(i);
+                        }
+                    }
+
+                    container.appendChild(title);
+                    let rating;
+                    
+                    for (let i = 0; i < 5; ++i) {
+                        data = data.substring(data.indexOf("data-value") + 12);
+                        rating = document.createElement("progress");
+                        rating.classList.add("movie-rating");
+                        rating.setAttribute("value", data.substring(0, data.indexOf('"')));
+                        rating.setAttribute("max", "5");
+                        container.appendChild(rating);
+                    }		   
+                }
+
+                resolve(movieID);
+            }
+        };
+
+        request.open("GET", `http://127.0.0.1:2020/movie-fetch`, true);  
+        request.send();
+    });
 }
