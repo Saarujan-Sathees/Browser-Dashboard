@@ -1,6 +1,5 @@
 # Rapid - Browser Dashboard
-A modern dashboard extension that replaces the regular browser home-page with an informative, elegant and customizable dashboard. This extension works best on Chrome since the Identity API
-is not supported by other browsers.
+A modern dashboard extension that replaces the regular browser home-page with an informative, elegant and customizable dashboard. This extension works best on Chrome since the Identity API is not supported by other browsers.
 
 ## Current Features
 - **Search Bar:** allows you to search in Google
