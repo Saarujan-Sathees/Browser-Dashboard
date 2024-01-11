@@ -4,6 +4,7 @@ is not supported by other browsers.
 
 ## Current Features
 - **Search Bar:** allows you to search in Google
+- **Custom Cursor:** custom circular cursor with interactive animations to replace the old, normal and boring cursor.
 - **Bookmarks (Not Complete):** clickable and rearrangeable bookmarks; I'm working on allowing users to add / remove bookmarks
 - **Custom Context Menu (Not Complete):** a custom context menu that currently allows you to:
     - Switch between light and dark mode; these settings are saved forever in your browser
