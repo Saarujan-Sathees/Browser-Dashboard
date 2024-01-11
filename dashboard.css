@@ -1,11 +1,10 @@
 :root {
     --dashboard: rgb(33 37 41);
     --dashboard-secondary: rgb(226 230 234);
-    --profile: rgb(39 43 47 / 95%);
+    --profile: rgb(39 43 47 / 85%);
     --widget: rgb(48 52 56);
     --on-hover: rgb(53 57 62);
     --accent: rgb(255 95 31);
-    --accent-secondary: rgb(255 95 31 / 40%);
     --text: white;
     --shadow: rgb(127 127 127 / 70%);
     --context-menu-item: rgb(238 242 246 / 15%);
@@ -89,7 +88,7 @@ body::-webkit-scrollbar {
     height: 2vh;
     width: 25vw;
     border-radius: 0.75vh;
-    background-color: var(--accent);
+    background-color: var(--dashboard-secondary);
     opacity: 95%;
     transition: top 1s cubic-bezier(0.3, 0.6, 0, 1);
 }
@@ -100,21 +99,22 @@ body::-webkit-scrollbar {
 
 .context-slider[type="range" i]::-webkit-slider-thumb {
     appearance: none;
-    height: 2.5vh;
-    width: 4vh;
-    border-radius: 0.75vh;
-    box-shadow: 0 0 10px var(--shadow);
+    height: 26px;
+    width: 26px;
+    border-radius: 26px;
+    background-color: var(--accent);
+    box-shadow: 0 0 6px var(--shadow);
 }
 
-#red-slider::-webkit-slider-thumb {
+#red-slider {
     background-color: var(--red-slider);
 }
 
-#green-slider::-webkit-slider-thumb {
+#green-slider {
     background-color: var(--green-slider);
 }
 
-#blue-slider::-webkit-slider-thumb {
+#blue-slider {
     background-color: var(--blue-slider);
 }
 
@@ -139,6 +139,8 @@ body::-webkit-scrollbar {
     padding: 4vh 4vw 8vh 4vw;
     border-bottom-left-radius: 30px;
     background-color: var(--dashboard);
+    flex-wrap: wrap;
+    align-content: start;
 }
 
 .widget {
@@ -147,14 +149,15 @@ body::-webkit-scrollbar {
     background-color: var(--widget);
     border-radius: 6px;
     margin: 1vh;
+    transition: background-color 100ms ease-in;
 }
 
+/*#region Movie Widget*/
 #einthusan-widget {
-    width: 40vw;
+    width: 21.5vw;
     display: grid;
     grid-template-columns: 1fr;
     overflow: hidden;
-    transition: background-color 100ms ease-in;
 }
 
 .movie-container {
@@ -194,6 +197,60 @@ body::-webkit-scrollbar {
     margin: 0 0 2vh 3vh;
 }
 
+/*#endregion*/
+
+/*#region Weather Widget*/
+#weather-widget {
+    width: 12vw;
+    box-sizing: border-box;
+    padding: 3vh;
+}
+
+/*#endregion*/
+
+/*#region Clock Widget*/
+#clock-widget {
+    display: flex;
+    height: 20vh;
+    width: 18vw;
+    box-sizing: border-box;
+    padding: 3vh;
+    align-items: center;
+    justify-content: center;
+}
+/*#endregion*/
+
+/*#region Battery Widget*/
+@property --percentage {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 0%;
+  }
+
+#battery-widget {
+    display: flex;
+    height: 20vh;
+    width: 20vh;
+    background-color: var(--widget) !important;
+    box-sizing: border-box;
+    padding: 3vh;
+    align-items: center;
+    justify-content: center;
+}
+
+#battery-level {
+    width: 14vh; 
+    height: 14vh; 
+    border-radius: 50%; 
+    transform: scale(-1, 1);   
+    background: radial-gradient(closest-side, var(--widget) 79%, transparent 80% 100%),
+                conic-gradient(var(--accent) var(--percentage), var(--dashboard) 0);
+    transition: --percentage 1800ms cubic-bezier(0.60, 0, 0.40, 1);
+}
+
+/*#endregion*/
+
+
 progress[value] {
     appearance: none;
 }
@@ -225,7 +282,7 @@ progress[value]::-webkit-progress-value {
 #profile-info {
     height: 10vh;
     width: 100%;
-    margin-bottom: 11vh;
+    margin-bottom: 4vh; /*11vh*/
     font-size: 18px;
     font-weight: 700;
     color: var(--text);
@@ -235,7 +292,25 @@ progress[value]::-webkit-progress-value {
 #email-widget {
     width: 25vw;
     padding: 1vh 0 1vh 0;
+    margin-bottom: 4vh;
     background-color: var(--dashboard);
+}
+
+#applet-container {
+    width: 23vw;
+    height: 26vh;
+    padding: 1.5vw 1vw;
+    background-color: var(--dashboard);
+}
+
+.applet {
+    width: 2.2vw;
+    height: 2.2vw;
+    padding: 0.8vw;
+    border-radius: 5px;
+    margin: 0.25vw;
+    background-color: var(--profile);
+    transition: background-color 200ms ease-in;
 }
 
 .email {
@@ -275,6 +350,7 @@ progress[value]::-webkit-progress-value {
     font-weight: 400;
     font-family: system-ui;
     color: var(--text);
+    cursor: none;
     transition: background-color 200ms ease-in;
 }
 
@@ -337,6 +413,6 @@ progress[value]::-webkit-progress-value {
     transition: scale 80ms ease-in;
 }
 
-#search-bar:hover, .bookmark:hover, .context-button:hover, .email:hover, #einthusan-widget:hover {
+#search-bar:hover, .bookmark:hover, .context-button:hover, .email:hover, .widget:hover, .applet:hover {
     background-color: var(--on-hover);
 }
