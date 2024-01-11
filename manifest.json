@@ -28,11 +28,11 @@
     },
 
     "oauth2": {
-        "client_id": "oAUTH_ID",
+        "client_id": "120630124494-cecr0b63rev0u3gptdcqp63643d0jm3v.apps.googleusercontent.com",
         "scopes": ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.modify",
                    "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/" ]
     },
 
-    "permissions": [ "activeTab", "scripting", "identity", "identity.email", "tabs" ],
-    "host_permissions": ["file_path_of_dashboard.html"]
+    "permissions": [ "activeTab", "scripting", "identity", "identity.email", "tabs", "storage" ],
+    "host_permissions": ["file:///C://Users/saaru/OneDrive/Programming%20Tests/Browser%20Dashboard/dashboard.html"]
 }
