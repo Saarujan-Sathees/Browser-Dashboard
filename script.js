@@ -555,10 +555,9 @@ async function fetchWeather() {
             });
             
             data = data.substring(data.indexOf("AP7Wnd", data.indexOf("AP7Wnd") + 1) + 8);
-            
-            let temp = document.createElement("pre");
+            let temp = document.createElement("pre"), tempEndIndex = data.indexOf("C<");
             temp.style = "margin: 0; font-family: system-ui; font-size: 5vh; font-weight: 600; color: var(--accent);";
-            temp.textContent = data.substring(0, data.indexOf("C")) + " °C";
+            temp.textContent = data.substring(data.lastIndexOf(">", tempEndIndex) + 1, tempEndIndex).trim() + " °C";
 
             data = data.substring(data.indexOf(".m.") + 4);
             let weather = document.createElement("pre"), weatherUnformatted = data.substring(0, data.indexOf("<"));
