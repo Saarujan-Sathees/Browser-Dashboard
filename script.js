@@ -1,3 +1,5 @@
+
+
 let contextMenu, currentDragOffset, currentDrag, placeholder, bookmarksEditable = false, contextDisplayed = false, 
 	backgroundSettings = false, root = document.documentElement, cursor, cursorRippling = false;
 let contextMenuStyle = "backdrop-filter: blur(8px) brightness(115%);";
@@ -27,44 +29,7 @@ async function retrieve(key) {
 const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Nov", "Dec" ];
 const SPACESTRING = "                ";
 chrome.runtime.onMessage.addListener((request, sender, response) => {
-	if (request.isProfileData) {
-		let response = request.body;
-		let text = document.createElement("pre");
-		text.style = "font-size: 20px; font-weight: 500; color: var(--text); font-family: system-ui; margin: 8vh 0 0 0; text-align: left;";
-		let improperName = String(response["name"]);
-		if (improperName.toUpperCase() == improperName) {
-			text.innerText = improperName.charAt(0).toUpperCase();
-			for (let i = 1; i < improperName.length; ++i) {
-				if (improperName.charAt(i - 1) == ' ') 
-					text.innerText += improperName.charAt(i).toUpperCase();
-				else 
-					text.innerText += improperName.charAt(i).toLowerCase();
-			}
-		} else {
-			text.innerText = improperName;
-		}
-		
-		document.getElementById("profile-info").appendChild(text);
-		text = document.createElement("pre");
-		text.style = `font-size: 16px; font-weight: 300; color: var(--text); font-family: system-ui; 
-					  margin: 0.5vh 0 0 0; text-align: left;`;
-		text.innerText = response["email"];
-		document.getElementById("profile-info").appendChild(text);
-
-		let profilePic = document.createElement("img");
-		profilePic.src = response["picture"];
-		profilePic.style = "height: 12vh; border-radius: 2vh; float: right; margin-right: 2.5vh; margin-top: -9vh";
-		document.getElementById("profile-info").appendChild(profilePic);
-        profilePic.addEventListener("click", async () => {
-            let device = await navigator.bluetooth.requestDevice({ 
-                acceptAllDevices: true
-            });
-
-            const server = await device.gatt.connect();
-            console.log(device.gatt.device.name);
-        })
-    
-	} else {
+	if (request.isEmailData) {
 		let res = request.res, date, subject, from, dateFound = false, dateInfo;
 		
 		for (let i = 0; i < res.length; ++i) {
@@ -87,7 +52,8 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
 					date = MONTHS[dateInfo.getMonth()] + ' ' + dateInfo.getDate(); 
 				}
 			} else if (res[i].name == "Subject") {
-				subject = res[i].value.replaceAll("\n", "").replaceAll("[External Sender] ", "");
+				subject = res[i].value.replaceAll(String.fromCharCode(13), "").replaceAll("[External Sender] ", "")
+                                      .replaceAll("\n", " ");
 			} else if (res[i].name == "From") {
 				from = res[i].value.substring(res[i].value.indexOf('"') == 0 ? 1 : 0);
 				from = from.substring(0, from.indexOf(" (") == -1 ? from.indexOf(" <") : from.indexOf(" ("));
@@ -129,12 +95,12 @@ chrome.runtime.onMessage.addListener((request, sender, response) => {
         subEl.className = "email-text";
         fromEl.style.width = "5vw";
 
-		while (measureText(subject, "500", "system-ui", "12px") >= 140) {
+		while (measureText(subject, "500", "system-ui", "12px") > 143) {
 			subject = subject.substring(0, subject.length - 1);
 		}
 
         fromEl.innerText = from;
-		subEl.innerText = subject + (originalLength != subject.length ? "..." : "");
+		subEl.innerText = subject.trim() + (originalLength != subject.length ? "..." : "");
 
 		emailElement.appendChild(fromEl);
         emailElement.appendChild(subEl);
@@ -297,25 +263,25 @@ async function cursorClick(ev) {
 
 function onHover(ev) {
     cursor.style.scale = "130%";
-    ev.target.addEventListener("mouseleave", exitHover);
+    ev.target.addEventListener("pointerleave", exitHover);
 }
 
 function exitHover(ev) {
     cursor.style.scale = "";
-    ev.target.removeEventListener("mouseleave", exitHover);
+    ev.target.removeEventListener("pointerleave", exitHover);
 }
 
 
 function loadContextMenu() {
     arr = document.getElementsByClassName("context-button");
     for (let i = 0; i < arr.length; ++i) {
-        arr.item(i).addEventListener("mouseover", onHover);
+        arr.item(i).addEventListener("pointerover", onHover);
     }
 }
 
 function fixBookmarks() {
-	window.removeEventListener("mousemove", horizontalDrag);
-	window.removeEventListener("mouseup", fixBookmarks);
+	window.removeEventListener("pointermove", horizontalDrag);
+	window.removeEventListener("pointerup", fixBookmarks);
 	placeholder.style = "";
 	if (placeholder.parentElement.contains(currentDrag))
 		placeholder.parentElement.removeChild(currentDrag);
@@ -330,8 +296,8 @@ function onBookmarkDrag(e) {
 	placeholder = e.target;
 	currentDragOffset = e.clientX - parseInt(e.target.offsetLeft);
 
-	window.addEventListener("mouseup", fixBookmarks);
-	window.addEventListener("mousemove", horizontalDrag);
+	window.addEventListener("pointerup", fixBookmarks);
+	window.addEventListener("pointermove", horizontalDrag);
 }
 
 function horizontalDrag(mouse) {
@@ -348,8 +314,8 @@ function horizontalDrag(mouse) {
 
 async function loadPage() {
     cursor = document.getElementById("cursor");
-    document.addEventListener("mousemove", moveCursor);
-    document.addEventListener("mousedown", cursorClick);
+    document.addEventListener("pointermove", moveCursor);
+    document.addEventListener("pointerdown", cursorClick);
     
 	contextMenu = document.getElementById("context-menu");
     let bgImage = await retrieve("background-image"), accentColor = await retrieve("accent-color");
@@ -370,13 +336,13 @@ async function loadPage() {
 
     loadApplets();
     loadSearchBar();
-    await loadEmails();
+    //await loadEmails();
     await loadBookmarks();
     loadContextMenu();
 
 	//Event Listeners
-    document.getElementById("search-bar").addEventListener("mouseover", onHover);
-    document.getElementById("einthusan-widget").addEventListener("mouseover", onHover);
+    document.getElementById("search-bar").addEventListener("pointerover", onHover);
+    document.getElementById("einthusan-widget").addEventListener("pointerover", onHover);
 	document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
 	document.getElementById("background-change").addEventListener("click", changeBackground);
     document.body.addEventListener("contextmenu", async e => {
@@ -387,13 +353,13 @@ async function loadPage() {
 				bookmarksEditable = false;
 				for (let i = 0; i < bookmarks.length; ++i) {
                     bookmarks.item(i).classList.remove("bookmark-draggable");
-					bookmarks.item(i).removeEventListener("mousedown", onBookmarkDrag);
+					bookmarks.item(i).removeEventListener("pointerdown", onBookmarkDrag);
 				}
 			} else {
 				bookmarksEditable = true;
 				for (let i = 0; i < bookmarks.length; ++i) {
                     bookmarks.item(i).classList.add("bookmark-draggable");
-					bookmarks.item(i).addEventListener("mousedown", onBookmarkDrag);
+					bookmarks.item(i).addEventListener("pointerdown", onBookmarkDrag);
 				}
 			}
 
@@ -412,7 +378,7 @@ async function loadPage() {
 					bookmarks.item(i).style.backgroundColor = "";
 					bookmarks.item(i).style.animation = "";
 					bookmarks.item(i).style.cursor = "";
-					bookmarks.item(i).removeEventListener("mousedown", onBookmarkDrag);
+					bookmarks.item(i).removeEventListener("pointerdown", onBookmarkDrag);
 				}
 			} else if (contextDisplayed == false) {
 				contextDisplayed = true;
@@ -446,7 +412,7 @@ async function loadEmails() {
 	}
 
 	for (let i = 0; i < emailContainer.childElementCount; ++i) {
-        emailContainer.children.item(i).addEventListener("mouseover", onHover);
+        emailContainer.children.item(i).addEventListener("pointerover", onHover);
 		emailContainer.children.item(i).addEventListener("click", () => { 
 			redirect(emailContainer.children.item(i).getAttribute("name")); 
 		});
@@ -456,7 +422,7 @@ async function loadEmails() {
 async function loadBookmarks() {
 	let bookmarkContainer = document.getElementById("bookmark-container");
 	for (let i = 0; i < bookmarkContainer.childElementCount; ++i) {
-        bookmarkContainer.children.item(i).addEventListener("mouseover", onHover);
+        bookmarkContainer.children.item(i).addEventListener("pointerover", onHover);
 		bookmarkContainer.children.item(i).addEventListener("click", () => {
 			redirect(bookmarkContainer.children.item(i).getAttribute("name"));
 		});
@@ -467,7 +433,7 @@ async function loadApplets() {
     const prefix = "https://www.google.com/s2/favicons?sz=128&domain_url=";
 	let appletContainer = document.getElementById("applet-container");
     for (let i = 0; i < appletContainer.childElementCount; ++i) {
-        appletContainer.children.item(i).addEventListener("mouseover", onHover);
+        appletContainer.children.item(i).addEventListener("pointerover", onHover);
         appletContainer.children.item(i).addEventListener("click", () => {
             redirect(appletContainer.children.item(i).getAttribute("name"));
         });
@@ -486,7 +452,7 @@ async function loadClock() {
 
     document.getElementById("clock-widget").appendChild(time);
     document.getElementById("clock-widget").appendChild(amOrPm);
-    document.getElementById("clock-widget").addEventListener("mouseover", onHover);
+    document.getElementById("clock-widget").addEventListener("pointerover", onHover);
 }
 
 async function loadBattery() {
@@ -525,7 +491,7 @@ async function backgroundLoop() {
 
         //#region Battery Loop
         battery.info = await navigator.getBattery();
-        battery.text.textContent = battery.info.level * 100 + "%";
+        battery.text.textContent = Math.round(battery.info.level * 100).toFixed(0) + "%";
         battery.widget.style.setProperty("--percentage", `${battery.info.level * 100}%`);
         //#endregion
 
@@ -555,6 +521,7 @@ async function fetchWeather() {
             });
             
             data = data.substring(data.indexOf("AP7Wnd", data.indexOf("AP7Wnd") + 1) + 8);
+            
             let temp = document.createElement("pre"), tempEndIndex = data.indexOf("C<");
             temp.style = "margin: 0; font-family: system-ui; font-size: 5vh; font-weight: 600; color: var(--accent);";
             temp.textContent = data.substring(data.lastIndexOf(">", tempEndIndex) + 1, tempEndIndex).trim() + " °C";
@@ -571,15 +538,20 @@ async function fetchWeather() {
             }
 
             let icon = document.createElement("span");
-            icon.className = "material-icons";
+            icon.className = "material-symbols-rounded";
+
             icon.style = "width: 12vh; margin: 2vh 3vh; font-size: 12vh; color: var(--text);"
-            let wordArr = weather.textContent.toLowerCase().split(" ");
-            icon.textContent = wordArr[wordArr.length - 1];
+
+            switch (weather.textContent.toLowerCase()) {
+                case "snow": icon.textContent = "snowing"; break;
+                case "freezing rain": icon.textContent = "weather_hail"; break;
+                default: icon.textContent = weather.textContent.split(" ").pop();
+            }
 
             widget.appendChild(temp);
             widget.appendChild(weather);
             widget.appendChild(icon);
-            widget.addEventListener("mouseover", onHover);
+            widget.addEventListener("pointerover", onHover);
 		}
 	};
 
