@@ -24,7 +24,7 @@
     }],
 
     "chrome_url_overrides" : {
-        "newtab": "dashboard.html"
+        "newtab": "index.html"
     },
 
     "oauth2": {
@@ -34,5 +34,5 @@
     },
 
     "permissions": [ "activeTab", "scripting", "identity", "identity.email", "tabs", "storage" ],
-    "host_permissions": ["file:///dashboard.html"]
+    "host_permissions": ["file:///index.html"]
 }
