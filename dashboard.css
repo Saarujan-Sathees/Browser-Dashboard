@@ -154,7 +154,7 @@ body::-webkit-scrollbar {
 
 /*#region Movie Widget*/
 #einthusan-widget {
-    width: 21.5vw;
+    width: 22.25vw;
     display: grid;
     grid-template-columns: 1fr;
     overflow: hidden;
@@ -271,22 +271,12 @@ progress[value]::-webkit-progress-value {
     position: absolute;
     top: 2vh;
     right: 1.5vw;
-    height: 96vh;
+    height: 86vh;
     width: 26vw;
-    padding: 0 2vw 0 2vw;
+    padding: 5vh 2vw;
     border-radius: 0 30px 30px 0;
     background-color: var(--profile);
     backdrop-filter: blur(8px);
-}
-
-#profile-info {
-    height: 10vh;
-    width: 100%;
-    margin-bottom: 4vh; /*11vh*/
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-    font-family: system-ui;
 }
 
 #email-widget {
