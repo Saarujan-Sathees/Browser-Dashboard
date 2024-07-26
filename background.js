@@ -1,28 +1,15 @@
 async function getOAuth(showPopup = false) {
-    if (navigator.userAgent.indexOf("Edg") != -1) {
-        return new Promise(resolve => { 
-            chrome.identity.launchWebAuthFlow({ "interactive": showPopup, "url": "https://google.com" }, token => {
-                console.log("OAuth2 Token Granted!");
-                resolve(token);
-            }); 
-        });
-    } else {
-        return new Promise(resolve => { 
-            return chrome.identity.getAuthToken({ "interactive": showPopup }, token => {
-                console.log("OAuth2 Token Granted!");
-                resolve(token);
-            }); 
-        });
-    }
+    return new Promise(resolve => { 
+        return chrome.identity.getAuthToken({ "interactive": showPopup }, token => {
+            console.log("OAuth2 Token Granted!");
+            resolve(token);
+        }); 
+    });
 }
 
-function insertProfileData(token, tabId) {
-    fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=' + token).then(response => response.json()).then(json => {
-        chrome.tabs.sendMessage(tabId, { isProfileData: true, body: json });
-    }).catch(async () => {
-        await getOAuth();
-        insertProfileData(token, tabId);
-    });;
+async function authSpotify(token) {
+    //8631b0b761594f4db0552bef539a7e7d
+    fetch("")
 }
 
 async function initializeSettings() {
@@ -40,7 +27,7 @@ function getEmail(tabId, token, messages, index) {
     
     fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${messages[index]["id"]}?access_token=${token}`)
     .then(r => r.json()).then(request => {
-        chrome.tabs.sendMessage(tabId, { isProfileData: false, res: request["payload"]["headers"], 
+        chrome.tabs.sendMessage(tabId, { isEmailData: true, res: request["payload"]["headers"], 
                                          id: request["id"], isLastEmail: index == 4 });
         getEmail(tabId, token, messages, ++index);
     }).catch(async () => {
@@ -79,7 +66,6 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
     if (tab.url == "chrome://newtab/" && change.status == 'complete') {   
         let token = await getOAuth();
-        insertProfileData(token, tab.id);
         insertEmails(token,tab.id);
     }
 });
