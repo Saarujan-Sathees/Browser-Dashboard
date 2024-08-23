@@ -773,14 +773,14 @@ async function loadBookmarks() {
 
 
 async function loadPage() {
+    let bgImage = await retrieve("background-image"), accentColor = await retrieve("accent-color");
+    root.style.setProperty("--accent", accentColor);
+	
     contextMenu = new ContextMenu();
     await contextMenu.initializeDefaults();
     cursor = document.getElementById("cursor");
     document.addEventListener("pointermove", moveCursor);
     document.addEventListener("pointerdown", cursorClick);
-
-    let bgImage = await retrieve("background-image"), accentColor = await retrieve("accent-color");
-    root.style.setProperty("--accent", accentColor);
         
     if (bgImage == "no_image") {
         document.body.style.backgroundColor = "var(--widget)";
