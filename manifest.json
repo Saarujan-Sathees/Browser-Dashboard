@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Rapid",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "background": {
         "service_worker": "background.js",
         "matches": ["<all_urls>"]
@@ -24,7 +24,7 @@
     }],
 
     "chrome_url_overrides" : {
-        "newtab": "index.html"
+        "newtab": "dashboard.html"
     },
 
     "oauth2": {
@@ -33,6 +33,7 @@
                    "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/" ]
     },
 
-    "permissions": [ "activeTab", "scripting", "identity", "identity.email", "tabs", "storage" ],
-    "host_permissions": ["file:///index.html"]
+    "permissions": [ "bookmarks", "activeTab", "scripting", "identity", "identity.email", "tabs", "storage" ],
+    "host_permissions": ["file:///dashboard.html", "https://einthusan.tv/movie/browse/?lang=tamil", 
+                         "https://www.google.com/*"]
 }
