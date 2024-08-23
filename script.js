@@ -67,7 +67,7 @@ class ContextMenu {
     
                 root.style.setProperty('--accent', `${red} ${green} ${blue}`);
                 hexDisplay.textContent = toHex(red, green, blue);
-                store("accent-color", `rgb(${red} ${green} ${blue})`);
+                store("accent-color", `${red} ${green} ${blue}`);
             }
     
             function onSliderUp(ev) {
