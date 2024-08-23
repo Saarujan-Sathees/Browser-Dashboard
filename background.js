@@ -17,7 +17,7 @@ async function authSpotify(token) {
 async function initializeSettings() {
     chrome.storage.local.set({ 
         "color-scheme": "dark", 
-        "accent-color": "rgb(255 95 31)", 
+        "accent-color": "255 95 31", 
         "background-image": "no_image",
         "widgets": {
             "einthusan": "no-pos",
