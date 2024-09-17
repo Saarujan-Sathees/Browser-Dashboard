@@ -9,6 +9,7 @@ class ContextMenu {
     CONTEXT_MODULES = { };
     SETTING_MODULES = { };
     DEFAULT_MODULES = { };
+    SAVE_STATE = [];
     SETTING_PING = null;
     active = false;
     disabled = false;
@@ -17,6 +18,8 @@ class ContextMenu {
         document.getElementById("theme-toggle").addEventListener("click", async ev => { 
             if (this.disabled || ev.button != 0) return;
             const scheme = await retrieve("color-scheme");
+            const icon = ev.target.id == "theme-toggle" ? ev.target : ev.target.parentElement;
+
             if (scheme == "dark" || scheme == null) {   //Dark -> Light
                 root.style.setProperty('--dashboard', "rgb(238 242 246)");
                 root.style.setProperty('--dashboard-secondary', "rgb(48 52 56)");
@@ -27,7 +30,7 @@ class ContextMenu {
                 root.style.setProperty('--shadow', "rgb(75 75 75 / 25%)");
                 root.style.setProperty('--context-menu-item', "rgb(33 37 41 / 15%);");
                 this.menu.style.backdropFilter = "blur(8px) brightness(95%)";
-                ev.currentTarget.style.transform = "rotate(180deg)";
+                icon.style.transform = "scale(-1, 1)";
                 await store("color-scheme", "light");
             } else {                                    //Light -> Dark
                 root.style.setProperty('--dashboard', "rgb(33 37 41)");
@@ -39,7 +42,7 @@ class ContextMenu {
                 root.style.setProperty('--shadow', "rgb(250 250 250 / 18%)");
                 root.style.setProperty('--context-menu-item', "rgb(238 242 246 / 15%)");
                 this.menu.style.backdropFilter = "blur(8px) brightness(135%)";
-                ev.currentTarget.style.transform = "";
+                icon.style.transform = "";
                 await store("color-scheme", "dark");
             }
         });
@@ -112,6 +115,19 @@ class ContextMenu {
             module.appendChild(hexDisplay);
             return module;
         }, true);
+
+        document.getElementById("context-back").addEventListener("click", () => {
+            if (this.SAVE_STATE.length == 0) return;
+
+            const state = this.SAVE_STATE.pop();
+            if (state.container == "module") {
+                this.moduleContainer.innerHTML = "";
+                if (state.element != null) this.moduleContainer.appendChild(state.element);
+            } else {
+                this.contextContainer.innerHTML = "";
+                this.contextContainer.appendChild(state.element);
+            }
+        });
     }
 
     handler(ev) {
@@ -138,6 +154,7 @@ class ContextMenu {
             if (this.SETTING_PING != null) {
                 this.contextContainer.appendChild(this.SETTING_MODULES[this.SETTING_PING]);
                 this.SETTING_PING = null;
+                this.SAVE_STATE.push({ container: "context", element: this.SETTING_MODULES[this.SETTING_PING] });
             }
             
             for (let i = 0; i < bookmarkContainer.childElementCount; ++i) {
@@ -163,6 +180,7 @@ class ContextMenu {
             if (e.target.id != "context-menu" && !this.menu.contains(e.target)) {
                 this.menu.style.transform = "";
                 this.active = false;
+                this.SAVE_STATE = [];
             }
         });
     }
@@ -180,6 +198,11 @@ class ContextMenu {
             document.getElementById(id).addEventListener("click", ev => {
                 if (this.disabled || ev.button != 0 || this.DEFAULT_MODULES[ev.currentTarget.dataset.moduleID].parentElement != null)
                     return;
+
+                if (this.moduleContainer.innerHTML.length > 0) 
+                    this.SAVE_STATE.push({ container: "module", element: this.moduleContainer.firstElementChild });
+                else 
+                    this.SAVE_STATE.push({ container: "module", element: null });
 
                 this.moduleContainer.innerHTML = "";
                 this.moduleContainer.appendChild(this.DEFAULT_MODULES[ev.currentTarget.dataset.moduleID]);
@@ -234,6 +257,11 @@ class ContextMenu {
         } else {                                                            //Context Module
             button.addEventListener("click", ev => {
                 if (this.disabled || ev.button != 0 || this.CONTEXT_MODULES[ev.currentTarget.dataset.moduleID] != null) return;
+                if (this.moduleContainer.innerHTML.length > 0) 
+                    this.SAVE_STATE.push({ container: "module", element: this.moduleContainer.firstElementChild });
+                else 
+                    this.SAVE_STATE.push({ container: "module", element: null });
+
                 this.moduleContainer.innerHTML = "";
                 this.moduleContainer.appendChild(this.CONTEXT_MODULES[ev.currentTarget.dataset.moduleID]);
             });
@@ -479,8 +507,8 @@ function handleWeatherData(request) {
 	}
 
     switch (icon.textContent) {
-        case "clouds": icon.textContent = "cloud"; break;
         case "showers": icon.textContent = "shower"; break;
+        default: icon.textContent = "cloud"; break;
     }
 	
 	let temp = document.createElement("pre");
@@ -775,13 +803,13 @@ async function loadBookmarks() {
 async function loadPage() {
     let bgImage = await retrieve("background-image"), accentColor = await retrieve("accent-color");
     root.style.setProperty("--accent", accentColor);
-	
+    
     contextMenu = new ContextMenu();
     await contextMenu.initializeDefaults();
     cursor = document.getElementById("cursor");
     document.addEventListener("pointermove", moveCursor);
     document.addEventListener("pointerdown", cursorClick);
-        
+
     if (bgImage == "no_image") {
         document.body.style.backgroundColor = "var(--widget)";
     } else {

@@ -178,11 +178,11 @@ body:has(.hoverable:hover) #cursor {
 
 .context-button {
     display: flex;
+    height: 10vh;
+    width: 10vh;
     justify-content: center;
     align-items: center;
-    height: 9.6vh;
-    width: 10vh;
-    padding-top: 0.4vh;
+    text-align: center;
     border-radius: 10px;
     box-shadow: 0 0 10px rgb(127 127 127 / 15%);
     background-color: var(--context-menu-item);
