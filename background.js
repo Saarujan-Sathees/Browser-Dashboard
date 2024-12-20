@@ -79,8 +79,7 @@ async function saveData() {
                     break;
                 case "weather": 
                     req = await (await fetch("https://www.google.com/search?q=weather&ie=UTF-8")).text();
-                    save[widgets[i]] = req.substring(req.indexOf('wob_tci" alt=') + 14, req.indexOf("wob_ttm") - 20);
-                    console.log(save[widgets[i]]);
+                    save[widgets[i]] = req.substring(req.indexOf('">', req.indexOf('wob_t q8U8x')) + 2, req.indexOf("\"wob_d\""));
                     chrome.storage.local.set(save);
                     break;
             }
