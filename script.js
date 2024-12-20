@@ -462,11 +462,11 @@ function handleEmailData(request) {
 	subEl.className = "email-text";
 	fromEl.style.width = "5vw";
 
-	while (measureText(subject, "500", "system-ui", "12px") > 143) {
+	while (measureText(subject, "500", "system-ui", "12px") > 135) {
 		subject = subject.substring(0, subject.length - 1);
 	}
 
-	fromEl.innerText = from;
+	fromEl.innerText = from + "\t\t";
 	subEl.innerText = subject.trim() + (originalLength != subject.length ? "..." : "");
 
 	emailElement.appendChild(fromEl);
@@ -486,7 +486,14 @@ function handleWeatherData(request) {
 
 	let weather = document.createElement("pre");
 	weather.style = "margin: 0; font-family: system-ui; font-size: 1.75vh; font-weight: 400; color: var(--text);";
-	const weatherStr = data.substring(0, data.indexOf('"'));
+    
+	let temp = document.createElement("pre");
+	temp.style = "margin: 0; font-family: system-ui; font-size: 5vh; font-weight: 600; color: rgb(var(--accent));";
+	temp.textContent = data.substring(0, data.indexOf("<")).trim() + " °C";
+
+    data = data.substring(data.indexOf(">", data.indexOf("wob_dc\"")) + 1);
+
+	const weatherStr = data.substring(0, data.indexOf('<'));
 	weather.textContent = weatherStr[0];
 
 	for (let i = 0; i < weatherStr.length - 1; ++i) {
@@ -510,11 +517,6 @@ function handleWeatherData(request) {
         case "showers": icon.textContent = "shower"; break;
         default: icon.textContent = "cloud"; break;
     }
-	
-	let temp = document.createElement("pre");
-	data = data.substring(data.indexOf("inline"));
-	temp.style = "margin: 0; font-family: system-ui; font-size: 5vh; font-weight: 600; color: rgb(var(--accent));";
-	temp.textContent = data.substring(data.indexOf(">") + 1, data.indexOf("<")).trim() + " °C";
 
 	widget.appendChild(temp);
 	widget.appendChild(weather);
@@ -523,7 +525,7 @@ function handleWeatherData(request) {
 
 //#endregion
 
-const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Nov", "Dec" ];
+const MONTHS = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
 chrome.runtime.onMessage.addListener((request, sender, response) => {
 	if (request.emailData) {
 		handleEmailData(request);
