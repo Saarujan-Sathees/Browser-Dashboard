@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<title>New Tab</title>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="script.js"></script>
+</head>
+
+<body>
+    <div id="info-bar">
+        <input id="search-bar" class="hoverable">
+        <div id="bookmark-container" class="contextAvailable" data-editable="false" style="position: relative; display: flex; margin-top: 2vh; height: 4vh; width: 59vw; z-index: 1;"></div>
+    </div>
+    <div id="widget-container">
+        <div class="widget" id="einthusan-widget"></div>
+        <div class="widget" id="weather-widget"></div>
+        <div class="widget" id="clock-widget"></div>
+        <div class="widget" id="battery-widget"></div>
+    </div>
+    <div id="account">
+        <div id="email-widget" class="widget"></div>
+        <div id="applet-container" class="widget">
+            <img class="applet hoverable" data-redirect="https://mail.google.com/mail/u/0">
+            <img class="applet hoverable" data-redirect="https://outlook.office.com/mail">
+            <img class="applet hoverable" data-redirect="https://linkedin.com/">
+            <img class="applet hoverable" data-redirect="https://github.com/Saarujan-Sathees">
+            <img class="applet hoverable" data-redirect="https://drive.google.com">
+            <img class="applet hoverable" data-redirect="https://docs.google.com/document/u/0">
+            <img class="applet hoverable" data-redirect="https://quest.pecs.uwaterloo.ca/psp/SS/ACADEMIC/SA/?cmd=login&languageCd=ENG">
+            <img class="applet hoverable" data-redirect="https://einthusan.tv/movie/browse/?lang=tamil">
+        </div>
+    </div>
+    <div id="context-menu" data-active="false">
+        <div id="settings">
+            <div class="context-button hoverable" id="theme-toggle"><pre style="height: 9vh; width: 10vh; margin: 0">◐</pre></div>
+            <div class="context-button hoverable" id="background-change"><pre style="scale: 70%; line-height: 10vh; margin: 4px 0 0 0;">🎨&#xFE0E;</pre></div>
+            <div class="context-button hoverable"></div>
+            <div class="context-button hoverable"></div>
+            <div class="context-button hoverable"></div>
+            <div class="context-button hoverable"></div>
+            <div class="context-button hoverable"></div>
+            <div class="context-button hoverable" id="context-back" style="background: rgb(var(--accent) / 35%)">
+                <span class="material-symbols-rounded" style="height: 8.5vh; width: 10vh; margin: 0; font-size: 9vh">chevron_left</span>
+            </div>
+        </div>
+        <div id="contextModuleContainer"></div>
+        <div id="settingsModuleContainer"></div>
+    </div>
+    <div id="cursor" style="display: none;"></div>
+</body>
